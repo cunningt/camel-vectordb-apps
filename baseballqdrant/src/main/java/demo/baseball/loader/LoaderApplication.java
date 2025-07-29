@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -29,13 +30,11 @@ import io.qdrant.client.VectorsFactory;
 import io.qdrant.client.grpc.Collections.CreateCollection;
 import io.qdrant.client.grpc.Collections.Distance;
 import io.qdrant.client.grpc.Collections.HnswConfigDiff;
-import io.qdrant.client.grpc.Collections.HnswConfigDiffOrBuilder;
 import io.qdrant.client.grpc.Collections.QuantizationConfig;
 import io.qdrant.client.grpc.Collections.QuantizationType;
 import io.qdrant.client.grpc.Collections.ScalarQuantization;
 import io.qdrant.client.grpc.Collections.VectorParams;
 import io.qdrant.client.grpc.Collections.VectorsConfig;
-import io.qdrant.client.grpc.Collections.QuantizationConfig.QuantizationCase;
 import io.qdrant.client.grpc.Points.PointStruct;
 import io.qdrant.client.grpc.Points.QuantizationSearchParams;
 import io.qdrant.client.grpc.Points.ScoredPoint;
@@ -47,9 +46,7 @@ import static io.qdrant.client.PointIdFactory.id;
 @SpringBootApplication
 public class LoaderApplication {
 
-	private static final String MNIST_FILENAME = "mnist_train.csv";
-	private static final String MNIST_TEST_FILENAME = "mnist_test.csv";
-	private static final String INDEX_NAME = "mnist-training";
+	private static final String INDEX_NAME = "baseball";
 
 	public static QdrantContainer qdrant = new QdrantContainer("qdrant/qdrant:latest");
 	public static QdrantClient client;
@@ -65,7 +62,7 @@ public class LoaderApplication {
                               .build()); 
 
 		HnswConfigDiff hnsw = HnswConfigDiff.newBuilder()
-			.setM(128)
+			.setM(256)
 			.setEfConstruct(1000)
 			.setOnDisk(true).build();
 		client.createCollectionAsync(
@@ -74,7 +71,6 @@ public class LoaderApplication {
 				.setHnswConfig(hnsw)
 				.setVectorsConfig(
 					VectorsConfig.newBuilder()
-
 						.setParams(
 							VectorParams.newBuilder()
 								.setDistance(Distance.Dot)
@@ -94,9 +90,9 @@ public class LoaderApplication {
 		.get();
 	}
 
-    public List<HistoricalPlayer> loadHistoricalPlayers(String file) {
+    public HashMap<String,HistoricalPlayer> loadHistoricalPlayers(String file) {
         List<HistoricalPlayer> results = null;
-
+		HashMap<String,HistoricalPlayer> hash = new HashMap<String,HistoricalPlayer>();
         try {
             FileReader fr = new FileReader(new File(file));
 
@@ -107,17 +103,18 @@ public class LoaderApplication {
                     .withSeparator(',')
                     .withIgnoreLeadingWhiteSpace(true)
                     .build();
+
             results = csvReader.parse();
-            //for (HistoricalPlayer p : results) {
-            //    System.out.println(p.getName() + " " + p.toSelectArray());
-            //}
+            for (HistoricalPlayer p : results) {
+				hash.put(p.getUid(), p);
+            }
         } catch (FileNotFoundException fnfe) {
             fnfe.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        return results;
+        return hash;
     }
 
 	public List<FangraphsPlayer> loadFangraphsPlayers(String file) {
@@ -146,7 +143,7 @@ public class LoaderApplication {
         return results;
     }
 
-	public void logWebPage(List<ScoredPoint> points, ArrayList<HistoricalPlayer> historicals, FangraphsPlayer fg, int counter) throws IOException {
+	public void logWebPage(List<ScoredPoint> points, HashMap<String,HistoricalPlayer> historicals, FangraphsPlayer fg, int counter) throws IOException {
 		System.out.println("logWebPage : " + fg.toSelectArray());
 		File webpage = new File("target" + File.separator + "log-" + counter + ".html");
 		FileWriter fw = new FileWriter(webpage);
@@ -157,13 +154,11 @@ public class LoaderApplication {
 		for (ScoredPoint sp : points) {
 
 			System.out.println(sp);
-
+			fw.write("<br>" + sp);
 			String playerID = sp.getId().getNum() + "";
-			HistoricalPlayer hp = historicals.get(Integer.parseInt(playerID));
+			HistoricalPlayer hp = historicals.get(playerID);
 
-			fw.write("<br>" + playerID + " " + hp.getName() + " " + hp.getYear() + " " + hp.toVector()
-			+  " " +  ", score : " + sp.getScore() + "<br>\n");
-			System.out.println(sp);
+			fw.write("<br>" + playerID + " " + hp.getName() + " " + hp.getYear() + " " + hp.toVector() +  " " +  ", score : " + sp.getScore() + "<br>\n");
 		}
 		fw.write("</body></html>\n");
 		fw.flush();
@@ -175,33 +170,30 @@ public class LoaderApplication {
 		try {
 			ArrayList<FangraphsPlayer> fangraphs = (ArrayList<FangraphsPlayer>) la.loadFangraphsPlayers("src/main/resources/fangraphs-leaders-aaa.csv");
 
-			ArrayList<HistoricalPlayer> historicals = (ArrayList<HistoricalPlayer>)
+			HashMap<String,HistoricalPlayer> historicals = (HashMap<String,HistoricalPlayer>)
 			la.loadHistoricalPlayers("src/main/resources/aaa.csv");
 
 			int counter = 0;
 			la.setup();
-			for (HistoricalPlayer hist : historicals) {
+			for (HistoricalPlayer hist : historicals.values()) {
 				if (hist.getAge() > 40) {
-					historicals.remove(hist);
 					break;
-				}
-				List<Float> hVector = hist.toVector();
+				} else { 	
+					List<Float> hVector = hist.toVector();
 
-				List<PointStruct> points =
-					List.of(
-						PointStruct.newBuilder()
-							.setId(id(counter++))
-							.setVectors(VectorsFactory.vectors(hVector))
-							.build());
-				UpdateResult updateResult = client.upsertAsync(INDEX_NAME, points).get();
+					List<PointStruct> points =
+						List.of(
+							PointStruct.newBuilder()
+								.setId(id(Long.parseLong(hist.getUid())))
+								.setVectors(VectorsFactory.vectors(hVector))
+								.build());
+					UpdateResult updateResult = client.upsertAsync(INDEX_NAME, points).get();
+				}
 			}
 
 			counter = 0;
-			System.out.println("FG SIZE " + fangraphs.size());
 			for (FangraphsPlayer fg : fangraphs) {
-			
 				List<Float> fVector = fg.toVector();
-
 				QuantizationSearchParams qsp = QuantizationSearchParams.newBuilder()
 					.setRescore(true)
 					.setIgnore(false)
@@ -219,14 +211,13 @@ public class LoaderApplication {
 					.setParams(searchParams)
 					.build();
 
+				System.out.println(searchRequest.toString());
+
 				List<ScoredPoint> points = client.searchAsync(searchRequest).get();
 
-				la.logWebPage(points, historicals, fg, counter);
-				
+				la.logWebPage(points, historicals, fg, counter);				
 				counter++;
-
 			}
-
 
 		} catch (Exception e) {
 			// TODO Auto-generated catch block

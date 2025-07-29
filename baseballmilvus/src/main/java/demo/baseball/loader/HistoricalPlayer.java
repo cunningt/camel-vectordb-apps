@@ -72,7 +72,6 @@ public class HistoricalPlayer {
     @CsvBindByPosition(position = 15)
     private Float warrep;
 
-
     public String getUid() {
         return uid;
     }
