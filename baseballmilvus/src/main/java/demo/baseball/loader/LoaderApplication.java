@@ -1,19 +1,22 @@
 package demo.baseball.loader;
 
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -68,7 +71,7 @@ public class LoaderApplication {
                 .fieldName("vector")
                 .indexName(INDEX_NAME)
                 .indexType(IndexParam.IndexType.FLAT)
-                .metricType(IndexParam.MetricType.L2)
+                .metricType(IndexParam.MetricType.COSINE)
                 .extraParams(extraParams)
                 .build());
         client.createCollection(CreateCollectionReq.builder()
@@ -131,43 +134,11 @@ public class LoaderApplication {
         return results;
     }
 
-	public float logWebPage(SearchResp searchR, HashMap<String,HistoricalPlayer> historicals, FangraphsPlayer fg) throws IOException {
-
-		File webpage = new File("target" + File.separator + "log-" + fg.getPlayerID()
-		 + ".html");
-		FileWriter fw = new FileWriter(webpage);
-		fw.write("<html><body>\n");
- 
-		fw.write("<h1>Player : " + fg.getName() + " Age: " + fg.getAge() + " Vector: " + fg.toVector() + "<br><br>\n"); 
-
-		float scoredTotal = 0;
-		List<List<SearchResp.SearchResult>> searchResults = searchR.getSearchResults();
-		for (List<SearchResp.SearchResult> results : searchResults) {
-			for (SearchResp.SearchResult result : results) {
-
-				String playerID = (String) result.getId().toString();
-
-				HistoricalPlayer hp = historicals.get(playerID);
-
-				float warScored = result.getScore() * hp.getWaroff();
-				fw.write("<br>" + playerID + " " + hp.getName() + " " + hp.getYear() + " " + hp.toVector() +  " " +  ", war: " + hp.getWaroff() + " score : " + result.getScore() + " scored war : " + warScored + "<br>\n");
-
-				fw.write("<br><br>Score : " + scoredTotal);
-				scoredTotal += warScored;
-			}
-		}
-
-		fw.write("</body></html>\n");
-		fw.flush();
-		fw.close();
-
-		return scoredTotal;
-	}
-
 	public static void main(String[] args) throws IOException {
 		LoaderApplication la = new LoaderApplication();
+		WebpageCreator webpageCreator = new WebpageCreator("target/rankings");
 		try {
-			ArrayList<FangraphsPlayer> fangraphs = (ArrayList<FangraphsPlayer>) la.loadFangraphsPlayers("src/main/resources/fangraphs-leaders-aaa.csv");
+			ArrayList<FangraphsPlayer> fangraphs = (ArrayList<FangraphsPlayer>) la.loadFangraphsPlayers("src/main/resources/fangraphs-minor-league-leaders-AAA.csv");
 
 			HashMap<String,HistoricalPlayer> historicals = (HashMap<String,HistoricalPlayer>) la.loadHistoricalPlayers("src/main/resources/aaa.csv");
 
@@ -185,6 +156,7 @@ public class LoaderApplication {
             	JsonObject row = new JsonObject();
 				row.addProperty("id", hist.getUid());
             	row.addProperty("uid", hist.getUid());
+				row.addProperty("age", hist.getAge());
 				row.addProperty("name", hist.getLeague());
 				row.addProperty("year", hist.getYear());
 				row.addProperty("waroff", hist.getWaroff());
@@ -199,26 +171,42 @@ public class LoaderApplication {
 
 			counter = 0;
 
-			TreeMap<Float,FangraphsPlayer> scores = new TreeMap<Float,FangraphsPlayer>();
+			HashMap<FangraphsPlayer,BigDecimal> scores = new HashMap<FangraphsPlayer,BigDecimal>();
 			for (FangraphsPlayer fg : fangraphs) {
+
 				List<Float> fVector = fg.toVector();
+				String filterString = new String("age > " + (fg.getAge()-1) + " and age < " + (fg.getAge()+1));
 				SearchResp searchR = client.search(SearchReq.builder()
 						.collectionName(INDEX_NAME)
 						.data(Collections.singletonList(new FloatVec(fg.toVector())))
+						.filter(filterString)
 						.limit(20)
 						.outputFields(Collections.singletonList("*"))
 						.build());
 
-				float score = la.logWebPage(searchR, historicals, fg);
-				scores.put(Float.valueOf(score), fg);
+				scores.put(fg, webpageCreator.logWebPage(searchR, historicals, fg));
 
 				counter++;
+
 			}
 
-			for (Map.Entry<Float, FangraphsPlayer> entry : scores.entrySet()) { 
-				FangraphsPlayer player = entry.getValue();
-            	System.out.println("Player = " + player.getName() + " " 
-					+ player.getAge() + " " + " Score = " + entry.getKey());      
+            LinkedHashMap<FangraphsPlayer, BigDecimal> sortedScores = scores.entrySet()
+                    .stream()
+                    .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            Map.Entry::getValue,
+                            (oldValue, newValue) -> oldValue, LinkedHashMap::new));
+
+			
+			File curfile = new File(".");
+			for (Map.Entry<FangraphsPlayer,BigDecimal> entry : sortedScores.entrySet()) { 
+				FangraphsPlayer player = entry.getKey();
+				BigDecimal score = entry.getValue();
+
+				char esc = 0x1B;
+            	System.out.println(esc + "]8;;" + curfile.getCanonicalPath() + "/target/rankings/" + player.getPlayerID() + ".html" + esc + "\\" + player.getName() +  
+					 esc + "]8;;" + esc + "\\ " + player.getAge() + "  " + " Score = " + score);      
 			}
 
 

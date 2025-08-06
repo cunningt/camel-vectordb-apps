@@ -200,6 +200,10 @@ public class HistoricalPlayer {
         this.warrep = warrep;
     }
 
+    public Float getWOBA() { 
+        return .1f;
+    }
+
     public List<Float> toVector() {
         return Arrays.asList(age, bbPercentage, kPercentage, iso, babip);
     }

@@ -1,0 +1,91 @@
+    <script>
+        let sortDirection = {};
+
+        function sortTable(columnIndex, dataType) {
+            const table = document.getElementById('statsTable');
+            const tbody = table.getElementsByTagName('tbody')[0];
+            const rows = Array.from(tbody.getElementsByTagName('tr'));
+            const headers = table.getElementsByTagName('th');
+            
+            // Clear previous sort indicators
+            for (let header of headers) {
+                header.classList.remove('sort-asc', 'sort-desc');
+            }
+            
+            // Determine sort direction
+            const currentDirection = sortDirection[columnIndex] || 'asc';
+            const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+            sortDirection[columnIndex] = newDirection;
+            
+            // Add sort indicator to current column
+            headers[columnIndex].classList.add(newDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+            
+            // Separate sticky row from sortable rows
+            const stickyRow = rows.find(row => row.classList.contains('highlighted-row'));
+            const sortableRows = rows.filter(row => !row.classList.contains('highlighted-row'));
+            
+            // Sort only the non-sticky rows
+            sortableRows.sort((a, b) => {
+                let aValue, bValue;
+                
+                if (columnIndex === 3) { // Level column - special handling
+                    aValue = a.cells[columnIndex].textContent.trim();
+                    bValue = b.cells[columnIndex].textContent.trim();
+                } else {
+                    aValue = a.cells[columnIndex].textContent.trim();
+                    bValue = b.cells[columnIndex].textContent.trim();
+                }
+                
+                if (dataType === 'number') {
+                    aValue = parseFloat(aValue) || 0;
+                    bValue = parseFloat(bValue) || 0;
+                    
+                    if (newDirection === 'asc') {
+                        return aValue - bValue;
+                    } else {
+                        return bValue - aValue;
+                    }
+                } else {
+                    if (newDirection === 'asc') {
+                        return aValue.localeCompare(bValue);
+                    } else {
+                        return bValue.localeCompare(aValue);
+                    }
+                }
+            });
+            
+            // Clear tbody and re-append: sticky row first, then sorted rows
+            tbody.innerHTML = '';
+            if (stickyRow) {
+                tbody.appendChild(stickyRow);
+            }
+            sortableRows.forEach(row => tbody.appendChild(row));
+        }
+
+        // Add hover effects and animations
+        document.addEventListener('DOMContentLoaded', function() {
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach((row, index) => {
+                row.style.animationDelay = `${index * 0.1}s`;
+                row.style.animation = 'fadeInUp 0.6s ease forwards';
+            });
+        });
+
+        // Add CSS animation keyframes
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

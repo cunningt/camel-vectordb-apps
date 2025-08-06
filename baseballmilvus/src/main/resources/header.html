@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>%NAME_TOKEN%</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #6b7280;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .table-container {
+            padding: 0;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th {
+            background: #374151;
+            color: white;
+            padding: 15px 10px;
+            text-align: left;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        th:hover {
+            background: #4b5563;
+        }
+
+        th::after {
+            content: '↕';
+            position: absolute;
+            right: 8px;
+            opacity: 0.6;
+            font-size: 12px;
+        }
+
+        th.sort-asc::after {
+            content: '↑';
+            opacity: 1;
+            color: #d1d5db;
+        }
+
+        th.sort-desc::after {
+            content: '↓';
+            opacity: 1;
+            color: #d1d5db;
+        }
+
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #f3f4f6;
+            transition: all 0.2s ease;
+        }
+
+        tr:hover {
+            background: #f9fafb;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .highlighted-row {
+            background: #f3f4f6 !important;
+            border-left: 4px solid #6b7280;
+            box-shadow: 0 2px 8px rgba(107, 114, 128, 0.15);
+            position: relative;
+        }
+
+
+
+        .highlighted-row:hover {
+            background: #e5e7eb !important;
+            transform: translateX(2px);
+        }
+
+        @keyframes sparkle {
+            0%, 100% { opacity: 0.6; transform: translateY(-50%) scale(1); }
+            50% { opacity: 1; transform: translateY(-50%) scale(1.1); }
+        }
+
+        .name-cell {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .numeric-cell {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+        }
+
+        .level-pro {
+            background: #374151;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .level-aaa {
+            background: #6b7280;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .level-aa {
+            background: #9ca3af;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .level-a {
+            background: #d1d5db;
+            color: #374151;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .stats-info {
+            padding: 20px 30px;
+            background: #f9fafb;
+            font-size: 13px;
+            color: #6b7280;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            table {
+                font-size: 12px;
+            }
+            
+            th, td {
+                padding: 8px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚾ %NAME_TOKEN%</h1>
+            <p>Click column headers to sort • Comparisons based off of Age/ISO/BABIP/K%/BB%</p>
+        </div>
+        
+        <div class="table-container">
+            <table id="statsTable">
+                <thead>
+                    <tr>
+                        <th onclick="sortTable(0, 'string')">Name</th>
+                        <th onclick="sortTable(1, 'number')">Age</th>
+                        <th onclick="sortTable(2, 'number')">Year</th>
+                        <th onclick="sortTable(3, 'string')">Level</th>
+                        <th onclick="sortTable(4, 'number')">Score</th>
+                        <th onclick="sortTable(5, 'number')">ISO</th>
+                        <th onclick="sortTable(6, 'number')">wOBA</th>
+                        <th onclick="sortTable(7, 'number')">BABIP</th>
+                        <th onclick="sortTable(8, 'number')">BB%</th>
+                        <th onclick="sortTable(9, 'number')">K%</th>
+                        <th onclick="sortTable(10, 'number')">WAR</th>
+                    </tr>
+                </thead>
+                <tbody>
