@@ -1,0 +1,36 @@
+\[INFO] Starting Camel ...
+[le.basic.CamelEmbedding.main()] PullPolicy                     INFO  Image pull policy will be performed by: DefaultPullPolicy()
+[le.basic.CamelEmbedding.main()] ImageNameSubstitutor           INFO  Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')
+[le.basic.CamelEmbedding.main()] DockerClientProviderStrategy   INFO  Loaded org.testcontainers.dockerclient.UnixSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first
+[le.basic.CamelEmbedding.main()] DockerClientProviderStrategy   INFO  Found Docker environment with Docker accessed via Unix socket (/Users/tcunning/.docker/run/docker.sock)
+[le.basic.CamelEmbedding.main()] DockerClientFactory            INFO  Docker host IP address is localhost
+[le.basic.CamelEmbedding.main()] DockerClientFactory            INFO  Connected to docker:
+  Server Version: 28.3.2
+  API Version: 1.51
+  Operating System: Docker Desktop
+  Total Memory: 7937 MB
+[le.basic.CamelEmbedding.main()] 0                              INFO  Creating container for image: testcontainers/ryuk:0.6.0
+[le.basic.CamelEmbedding.main()] RegistryAuthLocator            INFO  Failure when attempting to lookup auth config. Please ignore if you don't have images in an authenticated registry. Details: (dockerImageName: testcontainers/ryuk:0.6.0, configFile: /Users/tcunning/.docker/config.json, configEnv: DOCKER_AUTH_CONFIG). Falling back to docker-java default behaviour. Exception message: Could not execute [docker-credential-desktop, get]. Error=2, No such file or directory
+[le.basic.CamelEmbedding.main()] 0                              INFO  Container testcontainers/ryuk:0.6.0 is starting: b605dae4fb878809d50d79252665abe93e3e439791334b768af26ea0190a56db
+[le.basic.CamelEmbedding.main()] 0                              INFO  Container testcontainers/ryuk:0.6.0 started in PT2.251097S
+[le.basic.CamelEmbedding.main()] RyukResourceReaper             INFO  Ryuk started - will monitor and terminate Testcontainers containers on JVM exit
+[le.basic.CamelEmbedding.main()] DockerClientFactory            INFO  Checking the system...
+[le.basic.CamelEmbedding.main()] DockerClientFactory            INFO  ✔︎ Docker server version should be at least 1.6.0
+[le.basic.CamelEmbedding.main()] 1                              INFO  Creating container for image: milvusdb/milvus:v2.3.1
+[le.basic.CamelEmbedding.main()] 1                              INFO  Container milvusdb/milvus:v2.3.1 is starting: e9cee046d2ebd0097922286d8d28ec14d78bb4d54a81d73437f3bb2a794a46ac
+[le.basic.CamelEmbedding.main()] HttpWaitStrategy               INFO  /sleepy_burnell: Waiting for 60 seconds for URL: http://localhost:52582/healthz (where port 52582 maps to container port 9091)
+Wherefore art [le.basic.CamelEmbedding.main()] 1                              INFO  Container milvusdb/milvus:v2.3.1 started in PT3.247461S
+thou
+[le.basic.CamelEmbedding.main()] Platform                       INFO  Found matching platform from: jar:file:/Users/tcunning/.m2/repository/ai/djl/huggingface/tokenizers/0.31.1/tokenizers-0.31.1.jar!/native/lib/tokenizers.properties
+Inserted 4446 lines from src/main/resources/pg1513.txt into Milvus Vector DB
+[le.basic.CamelEmbedding.main()] LifecycleStrategySupport       INFO  Autowired property: embeddingModel on component: langchain4j-embeddings as exactly one instance of type: dev.langchain4j.model.embedding.EmbeddingModel (dev.langchain4j.model.embedding.onnx.allminilml6v2.AllMiniLmL6V2EmbeddingModel) found in the registry
+[le.basic.CamelEmbedding.main()] LifecycleStrategySupport       INFO  Autowired property: embeddingStore on component: langchain4j-embeddingstore as exactly one instance of type: dev.langchain4j.store.embedding.EmbeddingStore (dev.langchain4j.store.embedding.milvus.MilvusEmbeddingStore) found in the registry
+[le.basic.CamelEmbedding.main()] AbstractCamelContext           INFO  Apache Camel 4.14.0-SNAPSHOT (camel-1) is starting
+[le.basic.CamelEmbedding.main()] AbstractCamelContext           INFO  Routes startup (total:1)
+[le.basic.CamelEmbedding.main()] AbstractCamelContext           INFO      Started route1 (stream://in)
+[le.basic.CamelEmbedding.main()] AbstractCamelContext           INFO  Apache Camel 4.14.0-SNAPSHOT (camel-1) started in 6ms (build:0ms init:0ms start:6ms)
+[mel-1) thread #1 - stream://in] input                          INFO  Exchange[ExchangePattern: InOnly, BodyType: java.util.ArrayList, Body: [EmbeddingMatch { score = 0.8089618980884552, embedded = TextSegment { text = "What, art thou hurt?" metadata = {} }, embeddingId = f4c92329-2428-4505-a2b6-ffedfde8db96, embedding = null }, EmbeddingMatch { score = 0.7983488142490387, embedded = TextSegment { text = "And the place death, considering who thou art," metadata = {} }, embeddingId = 8e5aea1d-ea5f-47a3-923e-698b5f1bf13c, embedding = null }, EmbeddingMatch { score = 0.7974199652671814, embedded = TextSegment { text = "To comfort thee, though thou art banished." metadata = {} }, embeddingId = fa695d57-ada7-41ec-bbd1-87e2dfba16b3, embedding = null }, EmbeddingMatch { score = 0.790708601474762, embedded = TextSegment { text = "How art thou out of breath, when thou hast breath" metadata = {} }, embeddingId = bbce3429-6b68-4958-b108-aea9996fdc1f, embedding = null }, EmbeddingMatch { score = 0.7883236110210419, embedded = TextSegment { text = "Where and what time thou wilt perform the rite," metadata = {} }, embeddingId = 36145f20-ea0d-4851-847d-5afae3ae51d6, embedding = null }]]
+[le.basic.CamelEmbedding.main()] AbstractCamelContext           INFO  Apache Camel 4.14.0-SNAPSHOT (camel-1) is shutting down (timeout:45s)
+[le.basic.CamelEmbedding.main()] AbstractCamelContext           INFO  Routes stopped (total:1)
+[le.basic.CamelEmbedding.main()] AbstractCamelContext           INFO      Stopped route1 (stream://in)
+[le.basic.CamelEmbedding.main()] AbstractCamelContext           INFO  Apache Camel 4.14.0-SNAPSHOT (camel-1) shutdown in 12ms (uptime:10s)
