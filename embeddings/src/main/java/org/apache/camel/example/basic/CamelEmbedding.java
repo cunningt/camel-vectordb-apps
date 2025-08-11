@@ -46,7 +46,10 @@ public final class CamelEmbedding {
 
     public static MilvusContainer milvus = new MilvusContainer("milvusdb/milvus:v2.3.1");
 
-    public void setup(String fileName) {
+    public void setup(String fileName) throws IOException {
+        GutenbergDownloader gd = new GutenbergDownloader();
+        String testFile = gd.download("https://www.gutenberg.org/cache/epub/1513/pg1513.txt");
+
         milvus.start();
         EmbeddingStore<TextSegment> milvusStore = MilvusEmbeddingStore.builder()
                     .uri(milvus.getEndpoint())
