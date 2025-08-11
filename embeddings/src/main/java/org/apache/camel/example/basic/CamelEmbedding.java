@@ -21,17 +21,21 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.langchain4j.embeddingstore.LangChain4jEmbeddingStore;
+import org.apache.camel.component.langchain4j.embeddingstore.LangChain4jEmbeddingStoreAction;
+import org.apache.camel.component.langchain4j.embeddingstore.LangChain4jEmbeddingStoreComponent;
 import org.apache.camel.impl.DefaultCamelContext;
 
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.onnx.allminilml6v2.AllMiniLmL6V2EmbeddingModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.store.embedding.EmbeddingMatch;
-import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.milvus.MilvusEmbeddingStore;
 import org.testcontainers.milvus.MilvusContainer;
@@ -41,11 +45,10 @@ import org.testcontainers.milvus.MilvusContainer;
 public final class CamelEmbedding {
 
     public static MilvusContainer milvus = new MilvusContainer("milvusdb/milvus:v2.3.1");
-    EmbeddingStore<TextSegment> milvusStore;
 
     public void setup(String fileName) {
         milvus.start();
-        milvusStore = MilvusEmbeddingStore.builder()
+        EmbeddingStore<TextSegment> milvusStore = MilvusEmbeddingStore.builder()
                     .uri(milvus.getEndpoint())
                     .collectionName("test_collection")
                     .dimension(384)
@@ -54,18 +57,21 @@ public final class CamelEmbedding {
 
         int counter = 0;
         try {
-            if (counter > 20000) {
-                return;
-            }
             FileReader fr = new FileReader(new File(fileName));
 
             BufferedReader reader = new BufferedReader(fr);
-            String line = reader.readLine();
-            System.out.println(line);
-            TextSegment segment1 = TextSegment.from(line);
-            Embedding embedding1 = embeddingModel.embed(segment1).content();
-            milvusStore.add(embedding1, segment1);
-            counter++;
+            List<String> lines = (List<String>) reader.lines().toList();
+            Iterator<String> it = lines.iterator();
+            while (it.hasNext()) {
+                String line = it.next();
+                if (line != null && line.strip().length() > 0 ) {
+                    TextSegment segment1 = TextSegment.from(line);
+                    Embedding embedding1 = embeddingModel.embed(segment1).content();
+                    milvusStore.add(embedding1, segment1);
+                    counter++;
+                }
+            }
+            System.out.println("Inserted " + counter + " lines from " + fileName + " into Milvus Vector DB");
         } catch (FileNotFoundException fnfe) {
             fnfe.printStackTrace();
         } catch (IOException e) {
@@ -77,11 +83,19 @@ public final class CamelEmbedding {
         CamelEmbedding ce = new CamelEmbedding();
         ce.setup("src/main/resources/pg1513.txt");
 
+        EmbeddingStore<TextSegment> milvusStore = MilvusEmbeddingStore.builder()
+                    .uri(milvus.getEndpoint())
+                    .collectionName("test_collection")
+                    .dimension(384)
+                    .build();
+
         // create a CamelContext
         try (CamelContext camel = new DefaultCamelContext()) {
 
             // add routes which can be inlined as anonymous inner class
             // (to keep all code in a single java file for this basic example)
+            camel.getRegistry().bind("allmini", new AllMiniLmL6V2EmbeddingModel());
+            camel.getRegistry().bind("milvus", milvusStore);
             camel.addRoutes(createBasicRoute());
 
             // start is not blocking
@@ -97,7 +111,10 @@ public final class CamelEmbedding {
             @Override
             public void configure() {
                 from("stream:in")
-                        .to("log:input");
+                .to("langchain4j-embeddings:allmini")
+                .setHeader(LangChain4jEmbeddingStore.Headers.ACTION).constant(LangChain4jEmbeddingStoreAction.SEARCH)
+                .to("langchain4j-embeddingstore:milvus")
+                .to("log:input");
             }
         };
     }
