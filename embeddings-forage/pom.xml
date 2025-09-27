@@ -22,7 +22,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.apache.camel.example</groupId>
     <artifactId>camel-example-embedding</artifactId>
-    <version>4.14.0-SNAPSHOT</version>
+    <version>4.15.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Camel :: Example :: Embedding</name>
     <description>Embedding example</description>
@@ -61,11 +61,34 @@
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-langchain4j-embeddings</artifactId>
+            <version>${camel.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-langchain4j-embeddingstore</artifactId>
+            <version>${camel.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.camel.forage</groupId>
+            <artifactId>forage-vectordb-default</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+    
+        <!-- Specific vector database provider (for Milvus) -->
+        <dependency>
+            <groupId>org.apache.camel.forage</groupId>
+            <artifactId>forage-vectordb-milvus</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+    
+        <!-- Required core interfaces -->
+        <dependency>
+            <groupId>org.apache.camel.forage</groupId>
+            <artifactId>forage-core-vectordb</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-milvus</artifactId>
@@ -83,6 +106,7 @@
             <artifactId>milvus</artifactId>
             <version>1.19.6</version>
         </dependency>
+
         <!-- logging -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>

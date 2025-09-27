@@ -18,12 +18,16 @@ package org.apache.camel.example.basic;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.RouteBuilder;
@@ -31,6 +35,7 @@ import org.apache.camel.component.langchain4j.embeddingstore.LangChain4jEmbeddin
 import org.apache.camel.component.langchain4j.embeddingstore.LangChain4jEmbeddingStoreAction;
 import org.apache.camel.component.langchain4j.embeddingstore.LangChain4jEmbeddingStoreComponent;
 import org.apache.camel.component.langchain4j.embeddingstore.LangChain4jEmbeddingStoreHeaders;
+import org.apache.camel.component.properties.PropertiesComponent;
 import org.apache.camel.impl.DefaultCamelContext;
 
 import dev.langchain4j.data.embedding.Embedding;
@@ -47,17 +52,31 @@ public final class CamelEmbedding {
 
     public static MilvusContainer milvus = new MilvusContainer("milvusdb/milvus:v2.3.1");
 
+    public void rewriteMilvusProperties() throws IOException {
+        InputStream is = CamelEmbedding.class.getClassLoader().getResourceAsStream("forage-vectordb-milvus.properties");
+        Properties properties = new Properties();
+        properties.load(is);
+        //properties.setProperty("milvus.host", milvus.getHost());
+        //properties.setProperty("milvus.port", milvus.getMappedPort(19530).toString());
+        properties.setProperty("milvus.uri", milvus.getEndpoint());
+        FileOutputStream fos = new FileOutputStream("src/main/resources/forage-vectordb-milvus.properties");
+        properties.store(fos, "Overwritten on " + System.currentTimeMillis());
+        fos.close();
+    }
+
     public void setup(String fileName) throws IOException {
         GutenbergDownloader gd = new GutenbergDownloader();
         String testFile = gd.download("https://www.gutenberg.org/cache/epub/1513/pg1513.txt");
 
         milvus.start();
+        rewriteMilvusProperties();
         EmbeddingStore<TextSegment> milvusStore = MilvusEmbeddingStore.builder()
                     .uri(milvus.getEndpoint())
                     .collectionName("test_collection")
                     .dimension(384)
                     .build();
         EmbeddingModel embeddingModel = new AllMiniLmL6V2EmbeddingModel();
+
 
         int counter = 0;
         try {
@@ -87,20 +106,13 @@ public final class CamelEmbedding {
         CamelEmbedding ce = new CamelEmbedding();
         ce.setup("src/main/resources/pg1513.txt");
 
-        EmbeddingStore<TextSegment> milvusStore = MilvusEmbeddingStore.builder()
-                    .uri(milvus.getEndpoint())
-                    .collectionName("test_collection")
-                    .dimension(384)
-                    .build();
-
         // create a CamelContext
         try (CamelContext camel = new DefaultCamelContext()) {
-            camel.getRegistry().bind("milvus", milvusStore);
             camel.getRegistry().bind("allmini", new AllMiniLmL6V2EmbeddingModel());
-
             camel.addRoutes(createBasicRoute());
 
             camel.start();
+
             Thread.sleep(30_000);
             camel.stop();
         }
@@ -113,7 +125,7 @@ public final class CamelEmbedding {
                 from("stream:in")
                 .to("langchain4j-embeddings:allmini")
                 .setHeader(LangChain4jEmbeddingStoreHeaders.ACTION).constant(LangChain4jEmbeddingStoreAction.SEARCH)
-                .to("langchain4j-embeddingstore:milvus")
+                .to("langchain4j-embeddingstore:milvus?embeddingStoreFactory=#class:org.apache.camel.forage.vectordb.DefaultEmbeddingStoreFactory")
                 .to("log:input");
             }
         };
