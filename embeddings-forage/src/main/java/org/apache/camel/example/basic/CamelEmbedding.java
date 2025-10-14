@@ -56,8 +56,8 @@ public final class CamelEmbedding {
         InputStream is = CamelEmbedding.class.getClassLoader().getResourceAsStream("forage-vectordb-milvus.properties");
         Properties properties = new Properties();
         properties.load(is);
-        //properties.setProperty("milvus.host", milvus.getHost());
-        //properties.setProperty("milvus.port", milvus.getMappedPort(19530).toString());
+        properties.setProperty("milvus.host", milvus.getHost());
+        properties.setProperty("milvus.port", milvus.getMappedPort(19530).toString());
         properties.setProperty("milvus.uri", milvus.getEndpoint());
         FileOutputStream fos = new FileOutputStream("src/main/resources/forage-vectordb-milvus.properties");
         properties.store(fos, "Overwritten on " + System.currentTimeMillis());

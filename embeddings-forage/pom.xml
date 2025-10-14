@@ -63,6 +63,7 @@
             <artifactId>camel-langchain4j-embeddings</artifactId>
             <version>${camel.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-langchain4j-embeddingstore</artifactId>

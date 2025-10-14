@@ -19,11 +19,14 @@ import dev.langchain4j.store.embedding.milvus.MilvusEmbeddingStore;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 
 import org.slf4j.Logger;
 
@@ -33,12 +36,25 @@ public class EmbeddingStoreRouteBuilder extends RouteBuilder {
 
     public static MilvusContainer milvus = new MilvusContainer("milvusdb/milvus:v2.3.1").withStartupAttempts(3).waitingFor(Wait.defaultWaitStrategy());
 
+    public void rewriteMilvusProperties() throws IOException {
+        InputStream is = EmbeddingStoreRouteBuilder.class.getClassLoader().getResourceAsStream("forage-vectordb-milvus.properties");
+        Properties properties = new Properties();
+        properties.load(is);
+        properties.setProperty("milvus.host", milvus.getHost());
+        properties.setProperty("milvus.port", milvus.getMappedPort(19530).toString());
+        properties.setProperty("milvus.uri", milvus.getEndpoint());
+        FileOutputStream fos = new FileOutputStream("src/main/resources/forage-vectordb-milvus.properties");
+        properties.store(fos, "Overwritten on " + System.currentTimeMillis());
+        fos.close();
+    }
+
 	public EmbeddingStoreRouteBuilder() throws IOException {
         GutenbergDownloader gd = new GutenbergDownloader();
         String testFile = gd.download("https://www.gutenberg.org/cache/epub/1513/pg1513.txt");
         String fileName = new String("src/main/resources/pg1513.txt");
 
         milvus.start();
+        rewriteMilvusProperties();
         EmbeddingStore<TextSegment> milvusStore = MilvusEmbeddingStore.builder()
                     .uri(milvus.getEndpoint())
                     .collectionName("test_collection")
